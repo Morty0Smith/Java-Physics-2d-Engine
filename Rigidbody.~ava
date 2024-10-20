@@ -1,0 +1,32 @@
+public class Rigidbody {
+  private GameObject parentObject;
+  private double mass;
+  private double g = 9.81;
+  private int fps;
+  public Rigidbody(GameObject parentObject, double mass, int fps) {
+    this.parentObject = parentObject;
+    this.mass = mass;
+    this.fps = fps;
+  }
+  
+  public void CalculatePhysicsTick() {
+    double downwardForce = mass * g;
+    double deltaTime = (double) 1 / (double) fps;
+    parentObject.setPosition(parentObject.getX(), parentObject.getY() - downwardForce * deltaTime);
+  }
+  
+  
+  public void setParentObject(Object parentObject) {
+    this.parentObject = parentObject;
+  }
+  public Object getParentObject() {
+    return parentObject;
+  }
+  public void setMass(double mass) {
+    this.mass = mass;
+  }
+  public double getMass() {
+    return mass;
+  }
+  
+}

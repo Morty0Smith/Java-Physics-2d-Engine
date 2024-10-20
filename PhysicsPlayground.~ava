@@ -1,0 +1,430 @@
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.scene.layout.Pane;
+import javafx.stage.Stage;
+import java.util.concurrent.*;
+import javafx.scene.control.*;
+import javafx.event.*;
+import javafx.scene.shape.*;
+import javafx.scene.paint.Color;
+import javafx.scene.image.*;
+import java.util.ArrayList;
+import javafx.application.Platform;
+import java.util.*;
+import javafx.scene.input.MouseEvent;
+
+import javafx.animation.AnimationTimer;
+import java.util.concurrent.atomic.AtomicReference;
+
+/**
+ *
+ * Beschreibung
+ *
+ * @version 1.0 vom 01.10.2024
+ * @author 
+ */
+
+public class PhysicsPlayground extends Application {
+  // Anfang Attribute
+  private Button bPlay = new Button();
+  private ScheduledThreadPoolExecutor updateExecutor;
+  private ImageView imageView1 = new ImageView();
+  Color[][] stageImage = new Color[684][492];
+  Color[][] lastImage = new Color[stageImage.length][stageImage[0].length];
+  boolean[][] stageImageChangeMatrix = new boolean[stageImage.length][stageImage[0].length];
+  int currentFrame = 0;
+  int lastRenderedFrame = 0;
+  WritableImage stageImageFile = new WritableImage(684, 492);
+  private ArrayList<GameObject> objects = new ArrayList<GameObject>();
+  private ArrayList<SceneObject> sceneObjects = new ArrayList<SceneObject>();
+  private BoxCollider[] allBoxColliders = new BoxCollider[0];
+  private ArrayList<CircleCollider> allCircleColliders = new ArrayList<CircleCollider>();
+  private int fps = 60;
+  private double standardRigidbodyDampening = 0.07;
+  private Button bTester = new Button();
+  AnimationTimer animation;
+  boolean animationRunning = false;
+  private double[] currentMousePosition = {0.0,0.0};
+  BoxCollider cursorCollider; 
+  
+  // Ende Attribute
+  
+  public void start(Stage primaryStage) { 
+    for (Color[] row : stageImage) {
+      Arrays.fill(row, Color.WHITE); 
+    } //Initalize Image and buffer white to avoid errors
+    lastImage = copyColors(stageImage);
+    for (boolean[] row : stageImageChangeMatrix) {
+      Arrays.fill(row, false); 
+    } 
+    Pane root = new Pane();
+    Scene scene = new Scene(root, 750, 605);
+    // Anfang Komponenten
+    
+    bPlay.setLayoutX(84);
+    bPlay.setLayoutY(11);
+    bPlay.setPrefHeight(25);
+    bPlay.setPrefWidth(75);
+    bPlay.setOnAction(
+    (event) -> {bPlay_Action(event);} 
+    );
+    bPlay.setText("Play");
+    root.getChildren().add(bPlay);
+    imageView1.setX(36);
+    imageView1.setY(62);
+    imageView1.setFitWidth(684);
+    imageView1.setFitHeight(492);
+    imageView1.setOnMouseMoved((mouseEvent) -> {mouseMoved(mouseEvent);});
+    root.getChildren().add(imageView1);
+    bTester.setLayoutX(207);
+    bTester.setLayoutY(16);
+    bTester.setPrefHeight(25);
+    bTester.setPrefWidth(75);
+    bTester.setOnAction(
+    (event) -> {bTester_Action(event);} 
+    );
+    bTester.setText("Tester");
+    root.getChildren().add(bTester);
+    // Ende Komponenten
+    
+    primaryStage.setOnCloseRequest(e -> System.exit(0));
+    primaryStage.setTitle("PhysicsPlayground");
+    primaryStage.setScene(scene);
+    primaryStage.show();
+    
+    //Setup Test object (testing only)
+    AddRectangle(100,200,400,0,130,true,true,Color.RED,this);
+    //AddRectangle(100,200,200,0,90,true,true,Color.RED,this);
+    AddRectangle(700,40,350,350,90,false, true,Color.BLACK,this);
+    AddRectangle(700,40,350,400,90,false, true,Color.BLACK,this);
+    //AddRectangle(700,40,350,400,90,false, true,Color.BLACK,this);
+    sceneObjects.add(new SceneObject (objects.get(0)));
+    sceneObjects.add(new SceneObject (objects.get(1)));
+    sceneObjects.add(new SceneObject (objects.get(2)));
+    //sceneObjects.add(new SceneObject (objects.get(3)));
+  } // end of public PhysicsPlayground
+  
+  // Anfang Methoden
+  
+  public static void main(String[] args) {
+    launch(args);
+  } // end of main
+  
+  Runnable gameUpdate = new Runnable() {
+    public void run() {
+      UpdateFrame();
+      for (int i = 0; i < objects.size(); i++) {
+        if (objects.get(i).getRigidbody() != null) {
+          objects.get(i).getRigidbody().CalculatePhysicsTick();
+        } // end of if
+      }
+    }
+  };
+  
+  
+  Runnable sceneUpdate = new Runnable() {
+    public void run() {
+      //setupObjects();
+      cursorCollider.setPosition(currentMousePosition[0], currentMousePosition[1]);
+      for (int i = 0; i < allBoxColliders.length; i++) {
+        //System.out.println(i + " : " + allBoxColliders[i].getX() + " , "+ allBoxColliders[i].getY());
+      }
+      BoxCollider[] collidingColliders = cursorCollider.calculateBoxCollisions(allBoxColliders.length - 1);
+      if (collidingColliders.length != 0) {
+        System.out.println(collidingColliders[0]);
+      } // end of if
+      UpdateFrame();
+    }
+  };
+  
+  Runnable updateImageView = new Runnable() {
+    public void run() {
+      imageView1.setImage(stageImageFile);
+    }
+  };
+  
+  Runnable printFrames = new Runnable() {
+    public void run() {
+      System.out.println(currentFrame);
+    }
+  };
+  
+  public void mouseMoved(MouseEvent event) {
+    currentMousePosition[0] = event.getX() - 35;
+    currentMousePosition[1] = event.getY() - 60;
+  }
+  
+  
+  private void UpdateFrame() {
+    for (Color[] row : stageImage) {
+      Arrays.fill(row, Color.WHITE); 
+    }
+    //Initalize Image white to avoid errors
+    for (boolean[] row : stageImageChangeMatrix) {
+      Arrays.fill(row, false); 
+    } 
+    for (int i = 0; i < objects.size(); i++) {
+      int xPosition = (int)objects.get(i).getX();
+      int yPosition = (int)objects.get(i).getY();
+      Color[][] image = objects.get(i).getDisplayImage().getImage();
+      int startX = xPosition - objects.get(i).getDisplayImage().getLenght() / 2;
+      int startY = yPosition - objects.get(i).getDisplayImage().getHeight() / 2;
+      int length = objects.get(i).getDisplayImage().getLenght();
+      int height = objects.get(i).getDisplayImage().getHeight(); 
+      for (int x = 0; x < length; x++) {
+        for (int y = 0; y < height; y++) {
+          if ((startX + x) >= 0 && (startX + x) < stageImage.length && (startY + y) >= 0 && (startY + y) < stageImage[0].length) {
+            if (objects.get(i).getDisplayImage().getTransparencyMatrix()[x][y]) {
+              stageImage[startX + x][startY + y] = image[x][y];
+            } // end of if
+          } // end of if
+        }
+      }
+    }
+    for (int x = 0; x < stageImageChangeMatrix.length; x++) {
+      for (int y = 0; y < stageImageChangeMatrix[0].length; y++) {
+        if (compareColorDifference(stageImage[x][y],lastImage[x][y]) > 0.01) {
+          stageImageChangeMatrix[x][y] = true;
+        } // end of if
+      }
+    }
+    currentFrame++;
+    lastImage = copyColors(stageImage);
+  }
+  
+  private double compareColorDifference(Color c1, Color c2) {
+    double redDiff = Math.abs(c1.getRed() - c2.getRed());
+    double greenDiff = Math.abs(c1.getGreen() - c2.getGreen());
+    double blueDiff = Math.abs(c1.getBlue() - c2.getBlue());
+    double overallDiff = (redDiff + blueDiff + greenDiff) / 3;
+    return overallDiff;
+  }
+  
+  public GameObject Rectangle(int sizeX, int sizeY,double rotation, Color baseColor, PhysicsPlayground stage) {
+    Color[][] recColor = new Color[sizeX][sizeY];
+    boolean[][] transparencyMatrix = new boolean[sizeX][sizeY];
+    for (int x = 0; x < sizeX; x++) {
+      for (int y = 0; y < sizeY; y++) {
+        recColor[x][y] = baseColor;
+        transparencyMatrix[x][y] = true;
+      }
+    }
+    Image img = new Image(recColor,transparencyMatrix);
+    img.setRotation(rotation);
+    GameObject rec = new GameObject(img, stage);
+    return rec;
+  }
+  
+  private GameObject Circle(int radius, Color baseColor, PhysicsPlayground stage) {
+    Color[][] circleColor = new Color[radius * 2][radius * 2];
+    boolean[][] transparencyMatrix = new boolean[radius * 2][radius * 2];
+    int midpointXY = radius;
+    for (int x = 0; x < radius * 2; x++) {
+      for (int y = 0; y < radius * 2; y++) {
+        double distance = Math.sqrt(((double)x - (double)midpointXY) * ((double)x - (double)midpointXY) + ((double)y - (double)midpointXY) * ((double)y - (double)midpointXY));
+        if ((double)distance <= radius) {
+          circleColor[x][y] = baseColor;
+          transparencyMatrix[x][y] = true;
+        } else {
+          circleColor[x][y] = Color.WHITE;
+          transparencyMatrix[x][y] = false;
+        } // end of if-else
+      }
+    }
+    Image img = new Image(circleColor, transparencyMatrix);
+    GameObject circle = new GameObject(img, stage);
+    return circle;
+  }
+  
+  private void setupObjects() {
+    objects.clear();
+    for (int i = 0; i < sceneObjects.size(); i++) {
+      objects.add(sceneObjects.get(i).getObject());
+      GameObject editObject = objects.get(objects.size() - 1);
+      SceneObject sceneEditObject = sceneObjects.get(i);
+      editObject.setPosition(sceneEditObject.getX(), sceneEditObject.getY());
+      editObject.getDisplayImage().setRotation(sceneEditObject.getRotation());
+      if (editObject.getBoxCollider() != null) {
+        editObject.getBoxCollider().setRotation(sceneEditObject.getRotation() + 90);
+        editObject.getBoxCollider().setPosition(editObject.getX(),editObject.getY());
+      } // end of if
+      if (editObject.getRigidbody() != null) {
+        editObject.getRigidbody().setParentObject(editObject);
+      } // end of if
+    }
+  }
+    
+    
+  private void AddRectangle(int sizeX, int sizeY, int posX, int posY, double rotation, boolean hasRigigdbody, boolean hasCollider, Color baseColor, PhysicsPlayground stage) {
+    objects.add(Rectangle(sizeX,sizeY,rotation-90, baseColor, this));
+    objects.get(objects.size()- 1).setPosition(posX,posY);
+    if (hasRigigdbody) {
+      Rigidbody rb = new Rigidbody(objects.get(objects.size() - 1), standardRigidbodyDampening, fps);
+      objects.get(objects.size() - 1).addRigidbody(rb); 
+    } // end of if
+    if (hasCollider) {
+      BoxCollider bc = new BoxCollider(sizeX,sizeY,objects.get(objects.size()- 1).getX(),objects.get(objects.size()- 1).getY(),this);
+      bc.setRotation(rotation);
+      this.addBoxCollider(bc);
+      objects.get(objects.size() - 1).addBoxCollider(allBoxColliders.length - 1);
+    } // end of if
+  }
+    
+  private void AddCircle(int radius, int posX, int posY, boolean hasRigigdbody, boolean hasCollider, Color baseColor, PhysicsPlayground stage) {
+    objects.add(Circle(radius,baseColor,this));
+    objects.get(objects.size()- 1).setPosition(posX,posY);
+    if (hasRigigdbody) {
+      Rigidbody rb = new Rigidbody(objects.get(objects.size() - 1), standardRigidbodyDampening, fps);
+      objects.get(objects.size() - 1).addRigidbody(rb); 
+    } // end of if
+    if (hasCollider) {
+      int index = allCircleColliders.size();
+      CircleCollider cc = new CircleCollider(radius,objects.get(objects.size()- 1).getX(),objects.get(objects.size()- 1).getY(),index,this);
+      allCircleColliders.add(cc);
+      objects.get(objects.size() - 1).addCircleCollider(index);
+    } // end of if
+  }
+    
+  private void bPlay_Action(Event evt) {
+    // TODO hier Quelltext einfuegen
+    if (bPlay.getText().equals("Play")) {
+      try {
+        Thread.sleep(10);
+      } catch(Exception e) {
+        
+      } 
+      setupObjects();
+      if (animationRunning) {
+        animation.stop();
+        removeLastBoxCollider();
+      } // end of if
+      //Render first frame (otherwise, rendering would never start
+      RenderWhite();
+      Thread t = new Thread(gameUpdate);
+      t.start();
+      ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+      executor.schedule(printFrames, 10, TimeUnit.SECONDS);
+      animation = new AnimationTimer() {
+        @Override
+        public void handle(long now) {
+          if (currentFrame > lastRenderedFrame) {
+            for (int x = 0; x < stageImage.length; x++) {
+              for (int y = 0; y < 492; y++) {
+                if (stageImageChangeMatrix[x][y]) {
+                  stageImageFile.getPixelWriter().setColor(x,y,stageImage[x][y]);
+                } // end of if
+              }
+            }
+            imageView1.setImage(stageImageFile);
+            lastRenderedFrame = currentFrame;
+            Thread t = new Thread(gameUpdate);
+            t.start();
+          } // end of if  
+        }
+        
+      };
+      animation.start();
+      animationRunning = true;
+      
+      bPlay.setText("Stop");
+    } // end of if
+    else {
+      bPlay.setText("Play");
+      animation.stop(); 
+      try {
+        Thread.sleep(10);
+      } catch(Exception e) {
+        
+      } 
+      setupObjects();
+      //Render first frame (otherwise, rendering would never start
+      Thread t = new Thread(gameUpdate);
+      t.start();
+      RenderWhite();
+      cursorCollider = new BoxCollider(10,10,0,0,this);
+      addBoxCollider(cursorCollider);
+      animation = new AnimationTimer() {
+        @Override
+        public void handle(long now) {
+          if (currentFrame > lastRenderedFrame) {
+            for (int x = 0; x < stageImage.length; x++) {
+              for (int y = 0; y < 492; y++) {
+                stageImageFile.getPixelWriter().setColor(x,y,stageImage[x][y]); 
+              }
+            }
+            imageView1.setImage(stageImageFile);
+            lastRenderedFrame = currentFrame;
+            Thread t = new Thread(sceneUpdate);
+            t.start();
+          } // end of if 
+        }
+        
+      };
+      animation.start();
+      animationRunning = true;
+      
+    } // end of if-else
+  } // end of bPlay_Action
+  
+  public void RenderWhite() {
+    Color[][] colorToRender = new Color[stageImage.length][stageImage[0].length];
+    for (int x = 0; x < stageImage.length; x++) {
+      for (int y = 0; y < stageImage[0].length; y++) {
+        colorToRender[x][y] = Color.WHITE;
+        stageImageFile.getPixelWriter().setColor(x,y,colorToRender[x][y]);
+      }
+    }
+    lastImage = copyColors(colorToRender);
+  }
+          
+  public Color[][] copyColors(Color[][] originalArray) {
+    Color [][] copyToArray = new Color[originalArray.length][];
+    for(int i = 0; i < originalArray.length; i++)
+    {
+      Color[] aMatrix = originalArray[i];
+      int aLength = aMatrix.length;
+      copyToArray[i] = new Color[aLength];
+      System.arraycopy(aMatrix, 0, copyToArray[i], 0, aLength);
+    } 
+    return copyToArray;
+  }
+          
+  public void addBoxCollider(BoxCollider collider) {
+    BoxCollider[] oldColliders = allBoxColliders.clone();
+    allBoxColliders = new BoxCollider[allBoxColliders.length + 1];
+    for (int i = 0; i < oldColliders.length; i++) {
+      allBoxColliders[i] = oldColliders[i];
+    }
+    allBoxColliders[allBoxColliders.length- 1] = collider;
+  }
+          
+  public void removeLastBoxCollider() {
+    BoxCollider[] oldColliders = allBoxColliders.clone();
+    allBoxColliders = new BoxCollider[allBoxColliders.length -1];
+    for (int i = 0; i < allBoxColliders.length; i++) {
+      allBoxColliders[i] = oldColliders[i];
+    }
+  }
+          
+  public CircleCollider[] getCircleColliders() {
+    CircleCollider[] allColliders = new CircleCollider[allCircleColliders.size()];
+    for (int i = 0; i < allCircleColliders.size(); i++) {
+      allColliders[i] = allCircleColliders.get(i);
+    }
+    return allColliders;
+  }
+          
+          
+  public BoxCollider[] GetBoxColliders() {
+    return(allBoxColliders);
+  }
+          
+  public void bTester_Action(Event evt) {
+    // TODO hier Quelltext einfuegen
+    
+  } // end of bTester_Action
+          
+          
+          // Ende Methoden
+} // end of class PhysicsPlayground
+          

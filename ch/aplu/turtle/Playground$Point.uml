@@ -1,0 +1,26 @@
+﻿[Files]
+File0=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\LineRenderer.java
+File1=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\Pen.java
+File2=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\Playground$Point.class
+File3=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\Playground.java
+File4=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\TPrintable.java
+File5=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\Turtle.java
+File6=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\TurtleFactory.java
+File7=C:\Users\biebe\Programming\PhysicsPlayground\ch\aplu\turtle\TurtleRenderer.java
+
+[Diagram]
+comments=0
+OffsetX=0
+OffsetY=0
+Visibility=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+ShowConnections=0
+Fontname=Segoe UI
+Fontsize=12
+ShowObjectDiagram=0
+
+[Interactive]
+I0=
+

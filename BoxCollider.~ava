@@ -1,0 +1,38 @@
+public class BoxCollider {
+  private double width;
+  private double height;
+  private double[] position = new double[2];
+  static BoxCollider[] allColliders = new BoxCollider[0];
+  public BoxCollider(double width, double height, double x, double y) {
+    this.width = width;
+    this.height = height;
+    position[0] = x;
+    position[1] = y;
+    allColliders = new BoxCollider[allColliders.length + 1];
+    allColliders[allColliders.length - 1] = this;
+    for (int i = 0; i < allColliders.length; i++) {
+      System.out.println(allColliders[i].toString());
+    }
+  }
+  public void setDimensions(double width, double height) {
+    this.width = width;
+    this.height = height;
+  }
+  public double getWidth() {
+    return width;
+  }
+  public double getHeight() {
+    return height;
+  }
+  
+  public void setPosition(double x, double y) {
+    position[0] = x;
+    position[1] = y;
+  }
+  public double getX() {
+    return position[0];
+  }
+  public double getY() {
+    return position[1];
+  } 
+}

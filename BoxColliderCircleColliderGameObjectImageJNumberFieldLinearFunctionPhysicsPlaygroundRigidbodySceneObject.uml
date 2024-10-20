@@ -1,0 +1,127 @@
+﻿[Files]
+File0=C:\Users\biebe\Programming\PhysicsPlayground\BoxCollider.java
+File1=C:\Users\biebe\Programming\PhysicsPlayground\CircleCollider.java
+File2=C:\Users\biebe\Programming\PhysicsPlayground\GameObject.java
+File3=C:\Users\biebe\Programming\PhysicsPlayground\Image.java
+File4=C:\Users\biebe\Programming\PhysicsPlayground\JNumberField.java
+File5=C:\Users\biebe\Programming\PhysicsPlayground\LinearFunction.java
+File6=C:\Users\biebe\Programming\PhysicsPlayground\PhysicsPlayground.java
+File7=C:\Users\biebe\Programming\PhysicsPlayground\Rigidbody.java
+File8=C:\Users\biebe\Programming\PhysicsPlayground\SceneObject.java
+
+[Box:  - BoxCollider]
+X=811
+Y=40
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - CircleCollider]
+X=20
+Y=40
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - GameObject]
+X=1146
+Y=567
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - Image]
+X=1402
+Y=1157
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - JNumberField]
+X=20
+Y=2188
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - LinearFunction]
+X=1708
+Y=40
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - PhysicsPlayground]
+X=20
+Y=1157
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - Rigidbody]
+X=1861
+Y=1157
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Box:  - SceneObject]
+X=786
+Y=2188
+MinVis=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+FontSize=12
+FontName=Segoe UI
+
+[Diagram]
+comments=0
+OffsetX=1555
+OffsetY=0
+Visibility=0
+ShowParameter=4
+SortOrder=0
+ShowIcons=1
+ShowConnections=0
+Fontname=Segoe UI
+Fontsize=12
+ShowObjectDiagram=0
+
+[Connections]
+V0=BoxCollider#PhysicsPlayground#AssociationBidirectional####0#0#0###0#0
+V1=BoxCollider#GameObject#AssociationDirected####0#0#0###0#0
+V2=CircleCollider#PhysicsPlayground#AssociationDirected####0#0#0###0#0
+V3=GameObject#Image#AssociationDirected####0#0#0###0#0
+V4=GameObject#Rigidbody#AssociationBidirectional####0#0#0###0#0
+V5=GameObject#PhysicsPlayground#AssociationBidirectional####0#0#0###0#0
+V6=GameObject#SceneObject#AssociationBidirectional####0#0#0###0#0
+V7=PhysicsPlayground#SceneObject#Aggregation####0#0#0###0#0
+
+[Interactive]
+I0=
+

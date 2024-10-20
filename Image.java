@@ -1,0 +1,194 @@
+import javafx.scene.paint.Color;    
+
+public class Image {
+  private Color[][] image;
+  private boolean[][] transparencyMatrix;
+  private boolean[][] rotationTransperencyMarix;
+  private Color[][] rotationImage;
+  private double rotation = 0;
+  public int length = 0;
+  private int height = 0;
+  public Image(Color[][] image, boolean[][]transparencyMatrix) {
+    setImage(image.clone(),transparencyMatrix);
+  }  
+  public void setImage(Color[][] image, boolean[][]transparencyMatrix) {
+    try {
+      this.image = copyColors(image);
+      this.transparencyMatrix = transparencyMatrix.clone();
+      this.rotationTransperencyMarix = transparencyMatrix.clone();
+      this.rotationImage = image.clone();
+      length = this.image.length;
+      height = this.image[0].length;
+    } catch(Exception e) {
+      System.out.println("Invalid image!");
+    }
+  }
+  
+  public Color[][] getImage() {
+    return this.rotationImage;
+  }
+  
+  public void setRotation(double rotation) {
+    if (rotation > 360) {
+      rotation -= 360;
+    } // end of if
+    double[] half1Dimentions = {image.length / 2, image[0].length / 2};
+    int newSidelLength = 0;
+    double rotationRadian = BoxCollider.getRadian(-rotation);
+    if (image[0].length > image.length) {
+      newSidelLength = (int)(image[0].length * 1.5);
+    } else {            
+      newSidelLength = (int)(image.length * 1.5);
+    } // end of if-else
+    Color[][] rotatedImage = new Color[newSidelLength][newSidelLength];
+    length = newSidelLength;
+    height = newSidelLength;
+    boolean[][] rotatedImageTransperency = new boolean[newSidelLength][newSidelLength];
+    
+    for (int x = 0; x < rotatedImageTransperency.length; x++) {
+      for (int y = 0; y < rotatedImageTransperency[0].length; y++) {
+        rotatedImageTransperency[x][y] = false;
+        rotatedImage[x][y] = Color.BLACK;
+      }
+    }
+    
+    double sinA = Math.sin(rotationRadian);
+    double cosA = Math.cos(rotationRadian);
+    
+    for (int x = 0; x < image.length; x++) {
+      for (int y = 0; y < image[0].length; y++) {
+        double rechX = x - half1Dimentions[0];
+        double rechY = y -  half1Dimentions[1];
+        double newX = rechX*cosA - rechY*sinA + length / 2;
+        double newY = rechX*sinA + rechY*cosA + height / 2;
+        double xFac = ((newX - ((double)((int)newX) + 0.5))) ;
+        double yFac = ((newY - ((double)((int)newY)+ 0.5)));
+        double distanceFactor = 0;
+        for (int i = -1; i < 2; i++) {
+          for (int j = -1; j < 2; j++) {
+            distanceFactor = 1 - getDiag(xFac - i,yFac - j);
+            double darkeningFactor = 0.3;
+            distanceFactor = distanceFactor *darkeningFactor;
+            int AAx = (((int)newX) + i);
+            int AAy = (((int)newY) + j);
+            boolean isInXBounds = AAx >= 0 &&  AAx < newSidelLength;
+            boolean isInYBounds = AAy >= 0 &&  AAy < newSidelLength;
+            if (distanceFactor > 0 && isInXBounds && isInYBounds) {
+              int newRed = capRGB((int)((image[x][y].getRed() * distanceFactor) * 255) + (int)(rotatedImage[AAx][AAy].getRed() * 255));
+              int newGreen = capRGB((int)((image[x][y].getGreen() * distanceFactor) * 255) + (int)(rotatedImage[AAx][AAy].getGreen() * 255)); 
+              int newBlue = capRGB((int)((image[x][y].getBlue() * distanceFactor) * 255) + (int)(rotatedImage[AAx][AAy].getBlue() * 255));
+              Color partialColor = Color.rgb(newRed,newGreen,newBlue);
+              rotatedImage[AAx][AAy] = partialColor;
+              if (transparencyMatrix[x][y]) {
+                rotatedImageTransperency[AAx][AAy] = true;
+              } // end of if
+            } // end of if
+          }
+        }
+        //newX += half1Dimentions[0];
+        //newY += half1Dimentions[1];
+        if (newX >= 0 && newX < newSidelLength && newY >= 0 && newY < newSidelLength) {
+          rotatedImage[(int)newX][(int)newY] = image[x][y];
+          if (transparencyMatrix[x][y]) {
+            rotatedImageTransperency[(int)newX][(int)newY] = true; 
+          }
+        } // end of if
+      }
+    }
+    this.rotationImage = rotatedImage.clone();
+    rotationTransperencyMarix = rotatedImageTransperency.clone();
+    this.rotation = rotation;
+  }
+  
+  public int capRGB(int value) {
+    if (value > 255) {
+      value = 255;
+    } // end of if
+    if (value < 0) {
+      value = 0;
+    } // end of if
+    return value;
+  }
+  
+  public static Image enlightenImage(Image inputImage, double enlightenFactor) {
+    Color[][] editColorImage = copyColors(inputImage.getImage()); 
+    for (int x = 0; x < editColorImage.length; x++) {
+      for (int y = 0; y < editColorImage[0].length; y++) {
+        //double newRed = capColor(editColorImage[x][y].getRed() * enlightenFactor);
+        //double newGreen = capColor(editColorImage[x][y].getGreen() * enlightenFactor);
+        //double newBlue = capColor(editColorImage[x][y].getBlue() * enlightenFactor);
+        editColorImage[x][y] = Color.color(0,0,0);
+      }
+    }
+    Image editImage = new Image(editColorImage, inputImage.getTransparencyMatrix());
+    return editImage; 
+  }
+  
+  private static double capColor(double input) {
+    if (input > 1) {
+      input = 1;
+    } // end of if
+    if (input < 0) {
+      input = 0;
+    } // end of if
+    return input;
+  }
+  
+  public static Color[][] copyColors(Color[][] originalArray) {
+    Color [][] copyToArray = new Color[originalArray.length][];
+    for(int i = 0; i < originalArray.length; i++)
+    {
+      Color[] aMatrix = originalArray[i];
+      int aLength = aMatrix.length;
+      copyToArray[i] = new Color[aLength];
+      System.arraycopy(aMatrix, 0, copyToArray[i], 0, aLength);
+    } 
+    return copyToArray;
+  }
+  
+  public double getRotation()  {
+    return rotation;
+  }
+  
+  private static double square(double number) {
+    return number * number;
+  }
+  
+  private static double reverseFac(double factor) {
+    return 1-factor;
+  }
+  
+  private static double getDiag(double a, double b) {
+    return (Math.sqrt(square(a) + square(b))) / 1.414;
+  }
+  
+  private double getMax(double[] array) {
+    double max = array[0];
+    for (int i = 1; i < array.length; i++) {
+      if (array[i] > max) {
+        max = array[i];
+      } // end of if
+    }
+    return max;
+  }
+  
+  private double getMin(double[] array) {
+    double min = array[0];
+    for (int i = 1; i < array.length; i++) {
+      if (array[i] > min) {
+        min = array[i];
+      } // end of if
+    }
+    return min;
+  }
+  
+  public boolean[][] getTransparencyMatrix() {
+    return this.rotationTransperencyMarix;
+  }
+  public int getLenght() {
+    return length;
+  }
+  public int getHeight() {
+    return height;
+  }
+}
